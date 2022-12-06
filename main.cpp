@@ -52,6 +52,11 @@ uint64_t* split_integer(int dim, int* nums, int bw, PRG128* prg) {
 
 #define vec_ptr(a) &(*a.begin())
 
+#define recon_print(x, dim)\
+    reconstruct(dim, x, bw);\
+    if(party == ALICE)\
+      print_uint(x, dim);
+
 //alice get output at x_0
 void reconstruct(int dim, uint64_t *x_0, int bw_x) {
   uint64_t mask = (bw_x == 64 ? -1 : ((1ULL << bw_x) - 1));
@@ -121,15 +126,16 @@ void test_add() {
 }
 
 void test_ele_product() {
-  auto num_pair = prepare_data({1,2,3,4,5}, {-1,-2,-3,-4,-5});
+  auto num_pair = prepare_data({-1,-2,-3,-4,-5}, {-1,-2,-3,-4,-5});
   uint64_t *res = new uint64_t[5];
 
   prod->hadamard_product(5, num_pair.first, num_pair.second, res, bw, bw, bw);
 
-  reconstruct(5, res, 32);
+  recon_print(res, 5);
+//   reconstruct(5, res, 32);
 
-  if(party == ALICE)
-    print_uint(res, 5);
+//   if(party == ALICE)
+//     print_uint(res, 5);
 }
 
 int main(int argc, char **argv) {
