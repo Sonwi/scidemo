@@ -164,12 +164,25 @@ void test_add() {
   }
 }
 
+void test_ele_product() {
+  auto num_pair = prepare_data({1,2,3,4,5}, {-1,-2,-3,-4,-5});
+  uint64_t *res = new uint64_t[5];
+
+  prod->hadamard_product(5, num_pair.first, num_pair.second, res, bw, bw, bw);
+
+  reconstruct(5, res, 32);
+
+  if(party == ALICE)
+    print_uint(res, 5);
+}
+
 int main(int argc, char **argv) {
   parse_arg(argc, argv);
   init_global_val();
 
-  test_split_recon();
-  test_add();
+//   test_split_recon();
+//   test_add();
+  test_ele_product();
   return 0;
 }
 
