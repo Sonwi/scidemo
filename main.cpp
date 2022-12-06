@@ -12,7 +12,7 @@ OTPack *otpack;
 LinearOT *prod;
 PRG128 *prg;
 
-int dim = 1 << 16;
+int dim = 16;
 int bwA = 32;
 int bwB = 32;
 int bwC = 32;
@@ -109,25 +109,31 @@ void reconstruct(int dim, uint64_t *x_0, int bw_x) {
   }
 }
 
-int main(int argc, char **argv) {
+void parse_arg(int argc, char** argv) {
   ArgMapping amap;
   amap.arg("r", party, "Role of party: ALICE = 1; BOB = 2");
   amap.arg("p", port, "Port Number");
   amap.arg("ip", address, "IP Address of server (ALICE)");
 
   amap.parse(argc, argv);
+}
 
+void init_global_val() {
   iopack = new IOPack(party, port, address);
   otpack = new OTPack(iopack, party);
 
   prod = new LinearOT(party, iopack, otpack);
+  prg = new PRG128();
+}
 
-  int dim = 16;
+int main(int argc, char **argv) {
+  parse_arg(argc, argv);
+  init_global_val();
+
   int *nums = new int[16];
   for(int i = 0; i < dim; ++i) {
     nums[i] = -i;
   }
-  prg = new PRG128();
   uint64_t *x_share = split_integer(dim, nums, 32, prg);
   
   reconstruct(dim, x_share, 32);
