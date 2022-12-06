@@ -2,6 +2,7 @@
 #include <utils/emp-tool.h>
 #include <LinearOT/linear-ot.h>
 #include <library_fixed.h>
+#include <vector>
 
 using namespace std;
 using namespace sci;
@@ -17,6 +18,7 @@ int dim = 16;
 int bwA = 32;
 int bwB = 32;
 int bwC = 32;
+int bw = 32;
 
 uint64_t maskA = (bwA == 64 ? -1 : ((1ULL << bwA) - 1));
 uint64_t maskB = (bwB == 64 ? -1 : ((1ULL << bwB) - 1));
@@ -92,6 +94,7 @@ uint64_t* split_integer(int dim, int* nums, int bw, PRG128* prg) {
     } \
     std::cout << std::endl;
 
+#define vec_ptr(a) &(*a.begin())
 
 //alice get output at x_0
 void reconstruct(int dim, uint64_t *x_0, int bw_x) {
@@ -142,17 +145,20 @@ void test_split_recon() {
   }
 }
 
+std::pair<uint64_t*, uint64_t*> prepare_data(vector<int>&& nums_a, vector<int>&& nums_b) {
+  uint64_t* share_a = split_integer(nums_a.size(), vec_ptr(nums_a), bw, prg);
+  uint64_t* share_b = split_integer(nums_b.size(), vec_ptr(nums_b), bw, prg);
+  return std::pair<uint64_t*, uint64_t*>(share_a, share_b);
+}
+
 void test_add() {
-  int mat_a[] = {-1,-2,-3,-100};
-  int mat_b[] = {-1,-2,-3,-100};
-  uint64_t *a_share = split_integer(4, mat_a, 32, prg);
-  uint64_t *b_share = split_integer(4, mat_b, 32, prg);
+  auto u_pair = prepare_data({-1,-2,-3,-4}, {-100,-200,-300,-400});
 
   uint64_t *c = new uint64_t[4];
   for(int i = 0; i < 4; ++i) {
-    c[i] = a_share[i] - b_share[i];
+    c[i] = u_pair.first[i] - u_pair.second[i];
   }
-  reconstruct(4, c, 32);
+  reconstruct(4, c, bw);
   if(party == ALICE) {
     print_uint(c, 4);
   }
