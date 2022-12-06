@@ -87,7 +87,7 @@ uint64_t* split_integer(int dim, int* nums, int bw, PRG128* prg) {
 
 #define print_uint(x, dim)\
     for(int i = 0; i < dim; ++i ) { \
-        std::cout << int(x[dim]) << " "; \
+        std::cout << int(x[i]) << " "; \
     } \
     std::cout << std::endl;
 
@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
   if(party == ALICE) {
     print_uint(x_share, dim);
   }
-
+  return 0;
 }
 
 int main2(int argc, char **argv) {
@@ -170,4 +170,5 @@ int main2(int argc, char **argv) {
   delete[] inA;
   delete[] inB;
   delete prod;
+  return 0;
 }
