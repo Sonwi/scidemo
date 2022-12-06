@@ -1,6 +1,7 @@
 #include <iostream>
 #include <utils/emp-tool.h>
 #include <LinearOT/linear-ot.h>
+#include <library_fixed.h>
 
 using namespace std;
 using namespace sci;
@@ -126,10 +127,8 @@ void init_global_val() {
   prg = new PRG128();
 }
 
-int main(int argc, char **argv) {
-  parse_arg(argc, argv);
-  init_global_val();
 
+void test_split_recon() {
   int *nums = new int[16];
   for(int i = 0; i < dim; ++i) {
     nums[i] = -i;
@@ -141,6 +140,30 @@ int main(int argc, char **argv) {
   if(party == ALICE) {
     print_uint(x_share, dim);
   }
+}
+
+void test_add() {
+  int mat_a[] = {-1,-2,-3,-100};
+  int mat_b[] = {-1,-2,-3,-100};
+  uint64_t *a_share = split_integer(4, mat_a, 32, prg);
+  uint64_t *b_share = split_integer(4, mat_b, 32, prg);
+
+  uint64_t *c = new uint64_t[4];
+  for(int i = 0; i < 4; ++i) {
+    c[i] = a_share[i] - b_share[i];
+  }
+  reconstruct(4, c, 32);
+  if(party == ALICE) {
+    print_uint(c, 4);
+  }
+}
+
+int main(int argc, char **argv) {
+  parse_arg(argc, argv);
+  init_global_val();
+
+  test_split_recon();
+  test_add();
   return 0;
 }
 
