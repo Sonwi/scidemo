@@ -3,6 +3,7 @@
 #include <LinearOT/linear-ot.h>
 #include <library_fixed.h>
 #include <vector>
+#include <bitset>
 
 using namespace std;
 using namespace sci;
@@ -47,6 +48,7 @@ uint64_t* split_integer(int dim, int* nums, int bw, PRG128* prg) {
 #define print_uint(x, dim)\
     for(int i = 0; i < dim; ++i ) { \
         std::cout << int(x[i]) << " "; \
+        std::cout << (bitset<sizeof(uint64_t)>)x[i] << std::endl;\
     } \
     std::cout << std::endl;
 
@@ -72,6 +74,28 @@ void reconstruct(int dim, uint64_t *x_0, int bw_x) {
   } else {
     throw "party error";
   }
+}
+
+void inner_sum(int dim, uint64_t *x_share, uint64_t *out, int bw_x) {
+  uint64_t mask = (bw_x == 64 ? -1 : ((1ULL << bw_x) - 1));
+  for(int i = 0; i < dim; ++i) {
+    out[0] += x_share[i];
+    out[0] &= mask;
+  }
+}
+
+std::pair<uint64_t*, uint64_t*> prepare_data(vector<int>&& nums_a, vector<int>&& nums_b);
+
+void test_inner_sum() {
+  // vector<int> nums{-1,-2,-3,-4,-5};
+  // uint64_t *x_share = split_integer(nums.size(), vec_ptr(nums), bw, prg);
+  auto num_pair = prepare_data({-1,-2,-3,-4,-5}, {1,3,2,4,5});
+  uint64_t *out = new uint64_t(0);
+  inner_sum(5, num_pair.first, out, bw);
+  recon_print(out, 1);
+  *out = 0;
+  inner_sum(5, num_pair.second, out, bw);
+  recon_print(out, 1);
 }
 
 void parse_arg(int argc, char** argv) {
@@ -106,9 +130,15 @@ void test_split_recon() {
   }
 }
 
-std::pair<uint64_t*, uint64_t*> prepare_data(vector<int>&& nums_a, vector<int>&& nums_b) {
-  uint64_t* share_a = split_integer(nums_a.size(), vec_ptr(nums_a), bw, prg);
-  uint64_t* share_b = split_integer(nums_b.size(), vec_ptr(nums_b), bw, prg);
+std::pair<uint64_t*, uint64_t*> prepare_data(vector<int>&& nums_a, vector<int>&& nums_b)  {
+  int*a_ptr = new int[nums_a.size()];
+  memcpy(a_ptr, vec_ptr(nums_a), sizeof(int) * nums_a.size());
+  int *b_ptr = new int[nums_a.size()];
+  memcpy(b_ptr, vec_ptr(nums_b), sizeof(int) * nums_b.size());
+  uint64_t* share_a = split_integer(nums_a.size(), a_ptr, bw, prg);
+  uint64_t* share_b = split_integer(nums_b.size(), b_ptr, bw, prg);
+  delete[] a_ptr;
+  delete[] b_ptr;
   return std::pair<uint64_t*, uint64_t*>(share_a, share_b);
 }
 
@@ -142,8 +172,9 @@ int main(int argc, char **argv) {
   parse_arg(argc, argv);
   init_global_val();
 
-//   test_split_recon();
-//   test_add();
+  test_split_recon();
+  test_add();
   test_ele_product();
+  test_inner_sum();
   return 0;
 }
