@@ -13,6 +13,7 @@ add_executable(scidemo main.cpp)
 target_link_libraries(scidemo
     SCI::SCI-utils
     SCI::SCI-LinearOT
+    SCI::SCI-NonLinear
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
