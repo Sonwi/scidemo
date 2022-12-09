@@ -17,6 +17,7 @@ IOPack *my_iopack;
 OTPack *my_otpack;
 LinearOT *prod;
 PRG128 *prg;
+AuxProtocols *aux;
 
 int dim = 16;
 int bwA = 32;
@@ -163,6 +164,8 @@ void init_global_val() {
 
   prod = new LinearOT(party, my_iopack, my_otpack);
   prg = new PRG128();
+
+  aux = new AuxProtocols(party, my_iopack, my_otpack);
 }
 
 
@@ -275,8 +278,6 @@ void make_positive(AuxProtocols *aux, uint64_t *x, uint64_t *positive_x, int siz
 }
 
 void test_make_positive() {
-  AuxProtocols* aux = new AuxProtocols(party, my_iopack, my_otpack);
-
   uint64_t *x = prepare_data({-100000,-2,-3,-4,5, 100000});
 
   uint64_t *y = new uint64_t[6];
