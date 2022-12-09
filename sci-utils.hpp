@@ -6,6 +6,7 @@
 #include <bitset>
 #include <NonLinear/relu-ring.h>
 #include <NonLinear/drelu-field.h>
+#include <BuildingBlocks/aux-protocols.h>
 
 using namespace std;
 using namespace sci;
@@ -55,8 +56,8 @@ inline void print_binary(T num) {
 
 #define print_uint(x, dim)\
     for(int i = 0; i < dim; ++i ) { \
-        std::cout << int(x[i]) << " "; \
-        std::cout << (bitset<sizeof(x[i]) * 8>)x[i] << std::endl;\
+        std::cout << int64_t(signed_val(x[i], bw)) << " "; \
+        std::cout << (bitset<sizeof(x[i]) * 8>)signed_val(x[i], bw) << std::endl;\
     } \
     std::cout << std::endl;
 
@@ -193,7 +194,7 @@ void test_add() {
 }
 
 void test_ele_product() {
-  auto num_pair = prepare_data({-1,-2,-3,-4,-5}, {-1,-2,-3,-4,-5});
+  auto num_pair = prepare_data({-1,-2,-3,-4,-5}, {-1,-2,-3,-4,5});
   uint64_t *res = new uint64_t[5];
 
   prod->hadamard_product(5, num_pair.first, num_pair.second, res, bw, bw, bw);
@@ -208,3 +209,78 @@ void test_ele_product() {
 int num_threads = 1;
 int32_t bitlength = 32;
 extern uint64_t prime_mod;
+
+// void test_make_positive() {
+//   AuxProtocols* aux = new AuxProtocols(party, my_iopack, my_otpack);
+
+//   uint64_t *x_share = prepare_data({-1,1,-2,2});
+//   uint8_t *res = new uint8_t[4];
+
+//   aux->MSB(x_share, res, 4, bw);
+
+// //   uint64_t *x_po = new uint64_t[4];
+// //   aux->make_positive(x_share, res, x_po, 4);
+
+//   recon_print(res, 4, 1);
+
+//   delete aux;
+//   delete[] res;
+// }
+
+void my_drelu(AuxProtocols* aux, uint64_t *x, uint8_t *res, int size, int bw) {
+  aux->MSB(x, res, size, bw);
+  uint8_t b = (party == ALICE)? 0 : 1;
+  for(int i = 0; i < size; ++i) {
+    res[i] = res[i] ^ b;
+  }
+}
+
+void test_my_drelu() {
+  AuxProtocols *aux = new AuxProtocols(party, my_iopack, my_otpack);
+
+  uint64_t *x = prepare_data({-10, 10, -100, 100});
+
+  uint8_t *res = new uint8_t[4];
+  my_drelu(aux, x, res, 4, bw);
+
+  recon_print(res, 4, 1);
+}
+
+void make_positive(AuxProtocols *aux, uint64_t *x, uint64_t *positive_x, int size, int bw) {
+  uint64_t mask = (bw == 64 ? -1 : ((1ULL << bw) - 1));
+  uint8_t *drelu_res = new uint8_t[size];
+  my_drelu(aux, x, drelu_res, size, bw);
+  uint64_t *op_x = new uint64_t[size];
+  uint8_t *op_relu = new uint8_t[size];
+  for(int i = 0; i < size; i++) {
+    op_x[i] = (-x[i]) & mask;
+    op_relu[i] = drelu_res[i] ^ (party == ALICE?0:1);
+  }
+
+  uint64_t *out1 = new uint64_t[size];
+  uint64_t *out2 = new uint64_t[size];
+  aux->multiplexer(drelu_res, x, out1, size, bw, bw);
+  aux->multiplexer(op_relu, op_x, out2, size, bw, bw);
+
+  for(int i = 0; i < size; ++i) {
+    positive_x[i] = out1[i] + out2[i];
+    positive_x[i] &= mask;
+  }
+
+  delete[] out1;
+  delete[] out2;
+  delete[] drelu_res;
+  delete[] op_x;
+  delete[] op_relu;
+}
+
+void test_make_positive() {
+  AuxProtocols* aux = new AuxProtocols(party, my_iopack, my_otpack);
+
+  uint64_t *x = prepare_data({-100000,-2,-3,-4,5, 100000});
+
+  uint64_t *y = new uint64_t[6];
+  make_positive(aux, x, y, 6, bw);
+
+  recon_print(y, 6, bw);
+}

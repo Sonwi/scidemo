@@ -9,12 +9,19 @@ int main(int argc, char **argv) {
   // test_inner_sum();
   
   // test_ring_drelu_ideal();
-  test_field_drelu();
+  // test_field_drelu();
   // if(party == ALICE) {
   //   cout << prime_mod << endl;
   //   print_binary(prime_mod);
   //   int i = -10;
   //   print_binary(i);
   // }
+  // test_make_positive();
+  // test_my_drelu();
+  test_make_positive();
+  // uint64_t a = 1;
+  // uint64_t b = -1 * a;
+  // print_binary(a);
+  // print_binary(b);
   return 0;
 }
