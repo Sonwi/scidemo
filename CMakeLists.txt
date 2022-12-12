@@ -14,6 +14,7 @@ target_link_libraries(scidemo
     SCI::SCI-utils
     SCI::SCI-LinearOT
     SCI::SCI-NonLinear
+    SCI::SCI-FloatingPoint
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

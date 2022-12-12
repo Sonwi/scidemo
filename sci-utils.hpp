@@ -7,6 +7,7 @@
 #include <NonLinear/relu-ring.h>
 #include <NonLinear/drelu-field.h>
 #include <BuildingBlocks/aux-protocols.h>
+#include <FloatingPoint/fixed-point.h>
 
 using namespace std;
 using namespace sci;
@@ -17,7 +18,7 @@ IOPack *my_iopack;
 OTPack *my_otpack;
 LinearOT *prod;
 PRG128 *prg;
-AuxProtocols *aux;
+AuxProtocols *my_aux;
 
 int dim = 16;
 int bwA = 32;
@@ -165,7 +166,7 @@ void init_global_val() {
   prod = new LinearOT(party, my_iopack, my_otpack);
   prg = new PRG128();
 
-  aux = new AuxProtocols(party, my_iopack, my_otpack);
+  my_aux = new AuxProtocols(party, my_iopack, my_otpack);
 }
 
 
@@ -281,7 +282,66 @@ void test_make_positive() {
   uint64_t *x = prepare_data({-100000,-2,-3,-4,5, 100000});
 
   uint64_t *y = new uint64_t[6];
-  make_positive(aux, x, y, 6, bw);
+  make_positive(my_aux, x, y, 6, bw);
 
   recon_print(y, 6, bw);
+}
+
+void test_fix_point() {
+  FixOp *fp = new FixOp(party, my_iopack, my_otpack);
+
+  uint64_t *x_share = prepare_data({-1,1,2,-2});
+
+  FixArray fa = fp->input(party, 4, x_share, true, bw);
+
+  BoolArray bl = fp->MSB(fa);
+
+  recon_print(bl.data, 4, 1);
+}
+
+uint64_t *split_float(vector<float>&& nums, int scale) {
+  vector<int> int_nums(nums.size(), 0);
+  for(int i = 0; i  < nums.size(); ++i) {
+    int_nums[i] = int(nums[i] * (1 << scale));
+  }
+
+  return prepare_data(std::move(int_nums));
+}
+
+void test_scale_fix(){
+  uint64_t *fx = split_float({1.1,2.2,-3.25, -1.25}, 16);
+  uint64_t *fx_b = split_float({2.0, 1.0, 3.2, 4.0}, 16);
+
+  FixOp *fix = new FixOp(party, my_iopack, my_otpack);
+  
+  FixArray fa = fix->input(party, 4, fx, true, bw, 16);
+
+  FixArray fb = fix->input(party, 4, fx_b, true, bw, 16);
+
+  FixArray res = fix->mul(fa, fb, 64);
+
+  FixArray res_truc = fix->truncate_reduce(res, 16);
+  if(party == ALICE) {
+    std::cout << "scale" << res_truc.s << endl;
+    std::cout << "bit width" << res_truc.ell << endl;
+  }
+
+  recon_print(res_truc.data, 4, bw);
+
+//   BoolArray bl = fp->MSB(fa);
+
+//   recon_print(bl.data, 4, 1);
+}
+
+void test_div_cleartext(){
+  uint64_t *x_share = prepare_data({-4,4,-8,8});
+
+  uint64_t mask = (bw == 64 ? -1 : ((1ULL << bw) - 1));
+  
+  for(int i = 0; i < 4; ++i) {
+    x_share[i] = int(x_share[i]) / 4;
+    x_share[i] &= mask;
+  }
+
+  recon_print(x_share, 4, bw);
 }
